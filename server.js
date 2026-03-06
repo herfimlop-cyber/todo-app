@@ -180,8 +180,3 @@ app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
     console.log(`Timezone: GMT+7`);
 });
-
-
-app.listen(PORT, () => {
-    console.log("Server running on port " + PORT);
-});
