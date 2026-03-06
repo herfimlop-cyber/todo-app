@@ -13,6 +13,12 @@ self.addEventListener('activate', event => {
     event.waitUntil(clients.claim());
 });
 
+// Start checking notifications every second (even when app is closed)
+setInterval(() => {
+    console.log('[SW] Checking notifications...');
+    checkAndNotify();
+}, 1000);
+
 // Listen for messages from the app
 self.addEventListener('message', event => {
     if (event.data && event.data.type === 'CHECK_NOTIFICATIONS') {

@@ -82,11 +82,16 @@ function updatePermissionStatus(status) {
 
 // Check and start notification checking
 function startNotificationCheck() {
-    // Check immediately
-    checkNotifications();
+    // Tell service worker to start checking
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+            type: 'CHECK_NOTIFICATIONS'
+        });
+        console.log('[App] Service Worker notification check enabled');
+    }
     
-    // Check every minute
-    setInterval(checkNotifications, 60 * 10);
+    // Also check from main thread every second when app is active
+    setInterval(checkNotifications, 1000);
 }
 
 async function checkNotifications() {
