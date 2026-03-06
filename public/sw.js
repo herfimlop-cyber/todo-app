@@ -1,3 +1,16 @@
+// Handle push event (Web Push)
+self.addEventListener('push', function(event) {
+    if (event.data) {
+        const data = event.data.json();
+        event.waitUntil(
+            self.registration.showNotification(data.title || 'Notification', {
+                body: data.body || '',
+                tag: 'webpush',
+                requireInteraction: false
+            })
+        );
+    }
+});
 // Service Worker for PWA notifications
 const CACHE_VERSION = 'v1';
 
@@ -13,10 +26,16 @@ self.addEventListener('activate', event => {
     event.waitUntil(clients.claim());
 });
 
-// Start checking notifications every second (even when app is closed)
+
+// Only notify once per minute (not every second)
+let lastMinuteChecked = null;
 setInterval(() => {
-    console.log('[SW] Checking notifications...');
-    checkAndNotify();
+    const now = new Date();
+    const currentMinute = now.getUTCHours() + ':' + now.getUTCMinutes();
+    if (lastMinuteChecked !== currentMinute) {
+        lastMinuteChecked = currentMinute;
+        checkAndNotify();
+    }
 }, 1000);
 
 // Listen for messages from the app

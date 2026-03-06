@@ -1,3 +1,52 @@
+// Web Push
+const webpush = require('web-push');
+const VAPID_PUBLIC_KEY = 'BE9qIgu3-Orbmkp9Y6DdpEpdZ5WHVGdogl_G1VQXo692PHxnsxYHCoKIq2U3qafoEucKpgl46RcKp-L5Ng4YrGE';
+const VAPID_PRIVATE_KEY = 'QHP38IxZEkYjIQ4pyYzVUsea9kZTFMQQeudF5UfrsGk';
+webpush.setVapidDetails(
+  'mailto:admin@example.com',
+  VAPID_PUBLIC_KEY,
+  VAPID_PRIVATE_KEY
+);
+
+const SUBSCRIPTIONS_FILE = 'push_subscriptions.json';
+function readSubscriptions() {
+    try {
+        return JSON.parse(fs.readFileSync(SUBSCRIPTIONS_FILE));
+    } catch {
+        return [];
+    }
+}
+function saveSubscriptions(subs) {
+    fs.writeFileSync(SUBSCRIPTIONS_FILE, JSON.stringify(subs, null, 2));
+}
+
+// Subscribe endpoint
+app.post('/api/subscribe', (req, res) => {
+    const sub = req.body;
+    let subs = readSubscriptions();
+    // Check for duplicate
+    if (!subs.find(s => s.endpoint === sub.endpoint)) {
+        subs.push(sub);
+        saveSubscriptions(subs);
+    }
+    res.status(201).json({ success: true });
+});
+
+// Send push notification to all subscribers
+async function sendPushToAll(title, body) {
+    const subs = readSubscriptions();
+    const payload = JSON.stringify({ title, body });
+    for (const sub of subs) {
+        try {
+            await webpush.sendNotification(sub, payload);
+        } catch (err) {
+            // Remove invalid subscription
+            if (err.statusCode === 410 || err.statusCode === 404) {
+                saveSubscriptions(subs.filter(s => s.endpoint !== sub.endpoint));
+            }
+        }
+    }
+}
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
@@ -144,14 +193,12 @@ app.delete("/api/notifications/:id", (req, res) => {
 });
 
 // CHECK for due notifications
-app.get("/api/notifications/check", (req, res) => {
+app.get("/api/notifications/check", async (req, res) => {
     try {
         const notifications = readNotifications();
         const currentTime = getCurrentTimeGMT7();
         const lastCheck = getLastCheckTime();
-        
         const dueNotifications = [];
-        
         for (const notification of notifications) {
             if (notification.time === currentTime) {
                 dueNotifications.push({
@@ -161,12 +208,14 @@ app.get("/api/notifications/check", (req, res) => {
                 });
             }
         }
-        
         // Save check time to avoid duplicate notifications
         if (dueNotifications.length > 0) {
             saveLastCheckTime();
+            // ส่ง push notification ไปทุก subscriber
+            for (const n of dueNotifications) {
+                await sendPushToAll(n.title, n.body);
+            }
         }
-        
         res.json({ notifications: dueNotifications });
     } catch (error) {
         res.status(500).json({ error: error.message, notifications: [] });

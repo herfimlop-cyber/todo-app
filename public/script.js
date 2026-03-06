@@ -4,6 +4,47 @@ const NOTIFICATIONS_API = "/api/notifications";
 // Register Service Worker
 async function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
+        // VAPID Public Key (base64)
+        const VAPID_PUBLIC_KEY = 'BE9qIgu3-Orbmkp9Y6DdpEpdZ5WHVGdogl_G1VQXo692PHxnsxYHCoKIq2U3qafoEucKpgl46RcKp-L5Ng4YrGE';
+
+        // Convert base64 public key to Uint8Array
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding)
+                .replace(/-/g, '+')
+                .replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+        // Register push subscription and send to server
+        async function subscribeUserToPush() {
+            if (!('serviceWorker' in navigator)) return;
+            const registration = await navigator.serviceWorker.ready;
+            let subscription = await registration.pushManager.getSubscription();
+            if (!subscription) {
+                try {
+                    subscription = await registration.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                    });
+                } catch (err) {
+                    console.error('Push subscription error:', err);
+                    return;
+                }
+            }
+            // Send subscription to server
+            await fetch('/api/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(subscription)
+            });
+            console.log('Push subscription sent to server');
+        }
         try {
             const registration = await navigator.serviceWorker.register('/sw.js');
             console.log('Service Worker registered successfully:', registration);
@@ -14,6 +55,8 @@ async function registerServiceWorker() {
                     await registration.periodicSync.register('check-notifications', {
                         minInterval: 15 * 60 * 1000 // Check every 15 minutes
                     });
+                // Subscribe to push notifications
+                await subscribeUserToPush();
                     console.log('Periodic sync registered');
                 } catch (error) {
                     console.log('Periodic sync not supported:', error);
