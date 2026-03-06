@@ -1,4 +1,15 @@
+const express = require("express");
+const fs = require("fs");
+const path = require("path");
 
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(express.json());
+app.use(express.static("public"));
+
+const TODOS_FILE = "todos.json";
+const NOTIFICATIONS_FILE = "notifications.json";
 
 // Web Push
 const webpush = require('web-push');
@@ -49,18 +60,7 @@ async function sendPushToAll(title, body) {
         }
     }
 }
-const express = require("express");
-const fs = require("fs");
-const path = require("path");
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.use(express.json());
-app.use(express.static("public"));
-
-const TODOS_FILE = "todos.json";
-const NOTIFICATIONS_FILE = "notifications.json";
 
 // Initialize notification schedules file if it doesn't exist
 function initializeNotificationsFile() {
