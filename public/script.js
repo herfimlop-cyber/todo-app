@@ -86,7 +86,7 @@ function startNotificationCheck() {
     checkNotifications();
     
     // Check every minute
-    setInterval(checkNotifications, 60 * 1000);
+    setInterval(checkNotifications, 60 * 10);
 }
 
 async function checkNotifications() {
