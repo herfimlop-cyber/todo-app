@@ -1,16 +1,221 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Todo App</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Todo app with scheduled notifications">
+<meta name="theme-color" content="#2196F3">
+<title>Todo Notification App</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%232196F3' width='192' height='192'/><text x='96' y='120' font-size='80' font-weight='bold' fill='white' text-anchor='middle'>TODO</text></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%232196F3' width='192' height='192'/><text x='96' y='120' font-size='80' font-weight='bold' fill='white' text-anchor='middle'>TODO</text></svg>">
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+  }
+  
+  .container {
+    max-width: 600px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    padding: 30px;
+  }
+  
+  h1 {
+    color: #333;
+    margin-bottom: 30px;
+    text-align: center;
+    font-size: 24px;
+  }
+  
+  .section {
+    margin-bottom: 30px;
+  }
+  
+  .section-title {
+    color: #667eea;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 10px;
+  }
+  
+  .input-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+  
+  input[type="text"], input[type="time"] {
+    flex: 1;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+  }
+  
+  input[type="text"]:focus, input[type="time"]:focus {
+    outline: none;
+    border-color: #667eea;
+  }
+  
+  button {
+    padding: 12px 24px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  
+  button:hover {
+    background: #764ba2;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+  }
+  
+  button:active {
+    transform: translateY(0);
+  }
+  
+  button.secondary {
+    background: #f0f0f0;
+    color: #333;
+    width: 100%;
+  }
+  
+  button.secondary:hover {
+    background: #e0e0e0;
+  }
+  
+  button.danger {
+    background: #ff6b6b;
+  }
+  
+  button.danger:hover {
+    background: #ff5252;
+  }
+  
+  #list, #notificationsList {
+    list-style: none;
+  }
+  
+  #list li, #notificationsList li {
+    background: #f9f9f9;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 4px solid #667eea;
+    transition: all 0.3s;
+  }
+  
+  #list li:hover, #notificationsList li:hover {
+    background: #f0f0f0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  #notificationsList li {
+    flex-wrap: wrap;
+  }
+  
+  .notification-time {
+    color: #667eea;
+    font-weight: 600;
+    font-size: 16px;
+    margin-right: 10px;
+  }
+  
+  .notification-actions {
+    display: flex;
+    gap: 10px;
+  }
+  
+  #list button, #notificationsList button {
+    padding: 8px 12px;
+    font-size: 12px;
+    margin-left: auto;
+  }
+  
+  .permission-status {
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    font-weight: 600;
+    text-align: center;
+  }
+  
+  .permission-status.granted {
+    background: #d4edda;
+    color: #155724;
+  }
+  
+  .permission-status.denied {
+    background: #f8d7da;
+    color: #721c24;
+  }
+  
+  .permission-status.default {
+    background: #fff3cd;
+    color: #856404;
+  }
+  
+  .empty-message {
+    text-align: center;
+    color: #999;
+    padding: 20px;
+    font-style: italic;
+  }
+</style>
 </head>
 <body>
 
-<h2>To-Do List888</h2>
-
-<input id="todoInput">
-<button onclick="addTodo()">Add</button>
-
-<ul id="list"></ul>
+<div class="container">
+  <h1>📱 Todo with Notifications</h1>
+  
+  <!-- Notification Permission Status -->
+  <div id="permissionStatus" class="permission-status default">
+    Checking notification permission...
+  </div>
+  
+  <!-- Notification Schedule Section -->
+  <div class="section">
+    <h2 class="section-title">🔔 Schedule Notification (GMT+7)</h2>
+    <div class="input-group">
+      <input type="time" id="notificationTime" placeholder="HH:MM">
+      <button onclick="addNotificationSchedule()">Add Schedule</button>
+    </div>
+    <ul id="notificationsList"></ul>
+  </div>
+  
+  <!-- Todo Section -->
+  <div class="section">
+    <h2 class="section-title">✓ Todo List</h2>
+    <div class="input-group">
+      <input type="text" id="todoInput" placeholder="Add a new todo...">
+      <button onclick="addTodo()">Add</button>
+    </div>
+    <ul id="list"></ul>
+  </div>
+</div>
 
 <script src="script.js"></script>
 
